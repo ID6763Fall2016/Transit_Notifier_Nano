@@ -1,12 +1,9 @@
-#include <ESP8266HTTPClient.h>
-
-#include <ArduinoJson.h>
-
-/*
- *  Simple HTTP get webclient test
- */
+#define DEBUG_ESP_HTTP_CLIENT
+#define DEBUG_ESP_PORT Serial
 
 #include <ESP8266WiFi.h>
+#include <ESP8266HTTPClient.h>
+#include <ArduinoJson.h>
 
 //
 //const char* ssid     = "GTother";
@@ -16,7 +13,12 @@ const char* ssid     = "ATT9Gz6Unk";
 const char* password = "75h5286hc3fu";
 
 const char* host = "chi01.xuleijr.com";
-const int httpPort = 8080;
+const uint16_t port = 8080;
+const char * header_keys[] = {"User-Agent","Set-Cookie","Cookie","Date","Content-Type","Content-Length"} ;
+size_t header_cnt = sizeof(header_keys)/sizeof(char*);
+HTTPClient http;
+char path[] = "/api/suggest";
+
 byte mac[6];                     // the MAC address of your Wifi shield
 
 void setup() {
@@ -24,9 +26,6 @@ void setup() {
   delay(100);
 
   // We start by connecting to a WiFi network
-
-  Serial.println();
-  Serial.println();
   Serial.print("Connecting to ");
   Serial.println(ssid);
   
@@ -36,22 +35,36 @@ void setup() {
     delay(500);
     Serial.print(".");
   }
-
-  Serial.println("");
-  Serial.println("WiFi connected");
-  Serial.println("IP address: ");
-  Serial.println(WiFi.localIP());
+  iwconfig();
+  
+  http.setReuse(true);
+  http.collectHeaders(header_keys, header_cnt);
 }
-
-int value = 0;
 
 void loop() {
   delay(5000);
-  ++value;
 
-  Serial.print("connecting to ");
-  Serial.println(host);
+  Serial.printf("\n\nConnecting to %s\n", host);
+  
+  // Start http
+  http.begin(host, port, path);
+  int code = http.GET();
+  Serial.printf("Received HTTP code: %d\n", code);
+  if(HTTP_CODE_OK == code) {
+    StaticJsonBuffer<512> jsonBuffer;
+    const String &content = http.getString();
+    Serial.println(content);
+    JsonObject& root = jsonBuffer.parseObject(content);
+    int cn = root["clough"]["ahead"];
+    Serial.printf("%d minutes ahead of TSRB till Clough\n", cn);
+  } else {
+    // TODO use led or dot start to indicate network failure. 
+  }
+  http.end();
+}
 
+void iwconfig() {
+  
   Serial.println("IP address: ");
   Serial.println(WiFi.localIP());
 
@@ -69,49 +82,4 @@ void loop() {
   Serial.print(mac[4],HEX);
   Serial.print(":");
   Serial.println(mac[5],HEX);
-  
-  
-  // Use WiFiClient class to create TCP connections
-  WiFiClient client;
-  if (!client.connect(host, httpPort)) {
-    Serial.println("connection failed");
-    return;
-  }
-  
-  // We now create a URI for the request
-  String url = "/api/suggest";
-  Serial.print("Requesting URL: ");
-  Serial.println(url);
-  
-  // This will send the request to the server
-  client.print(String("GET ") + url + " HTTP/1.1\r\n" +
-               "Host: " + host + "\r\n" + 
-               "Connection: close\r\n\r\n");
-  delay(500);
-  
-  if(0 < client.available()) {
-    // Skipping headers
-    while(client.available() && '{' != client.read()) {}
-    int n = client.available() + 1;
-    // Get and parse json
-    if(n < 20480) {
-      char *buf = new char[n + 1];
-      *buf = '{';
-      int rd = client.peekBytes((uint8_t *)buf + 1, n);
-      buf[n] = 0;
-      Serial.printf("%d bytes read: %s\n", rd, buf);
-      StaticJsonBuffer<512> jsonBuffer;
-      char *p = strstr(buf, "{");
-      JsonObject& root = jsonBuffer.parseObject(p);
-      int cn = root["clough"]["ahead"];
-      Serial.printf("%d minutes ahead of TSRB till Clough\n", cn);
-      delete []buf;
-    } else {
-      Serial.printf("JSON too huge: %d bytes\n", n);
-    }
-  }
-  
-  Serial.println();
-  Serial.println("closing connection");
 }
-
