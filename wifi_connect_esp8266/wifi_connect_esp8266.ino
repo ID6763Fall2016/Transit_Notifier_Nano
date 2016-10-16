@@ -5,19 +5,19 @@
 #include <ESP8266HTTPClient.h>
 #include <ArduinoJson.h>
 
-//
+// GT config
 //const char* ssid     = "GTother";
 //const char* password = "GeorgeP@1927";
 // Home WIFI
 const char* ssid     = "ATT9Gz6Unk";
 const char* password = "75h5286hc3fu";
 
-const char* host = "chi01.xuleijr.com";
+const char host[] = "chi01.xuleijr.com";
+const char path[] = "/api/suggest";
 const uint16_t port = 8080;
-const char * header_keys[] = {"User-Agent","Set-Cookie","Cookie","Date","Content-Type","Content-Length"} ;
+const char *header_keys[] = {"User-Agent","Set-Cookie","Cookie","Date","Content-Type","Content-Length"} ;
 size_t header_cnt = sizeof(header_keys)/sizeof(char*);
 HTTPClient http;
-char path[] = "/api/suggest";
 
 byte mac[6];                     // the MAC address of your Wifi shield
 
@@ -64,22 +64,11 @@ void loop() {
 }
 
 void iwconfig() {
-  
-  Serial.println("IP address: ");
-  Serial.println(WiFi.localIP());
+  Serial.printf("IP address: %s\n", WiFi.localIP().toString().c_str());
 
   //print mac address
   WiFi.macAddress(mac);
-  Serial.print("MAC: ");
-  Serial.print(mac[0],HEX);
-  Serial.print(":");
-  Serial.print(mac[1],HEX);
-  Serial.print(":");
-  Serial.print(mac[2],HEX);
-  Serial.print(":");
-  Serial.print(mac[3],HEX);
-  Serial.print(":");
-  Serial.print(mac[4],HEX);
-  Serial.print(":");
-  Serial.println(mac[5],HEX);
+  for(int i = 0; i < 6; i++) {
+    Serial.printf(0 == i? "MAC: %X" : ":%x", mac[i]);
+  }
 }
