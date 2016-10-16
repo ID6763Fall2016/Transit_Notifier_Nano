@@ -1,3 +1,7 @@
+#include <ESP8266HTTPClient.h>
+
+#include <ArduinoJson.h>
+
 /*
  *  Simple HTTP get webclient test
  */
@@ -11,7 +15,8 @@
 const char* ssid     = "ATT9Gz6Unk";
 const char* password = "75h5286hc3fu";
 
-const char* host = "svn.xuleijr.com";
+const char* host = "chi01.xuleijr.com";
+const int httpPort = 8080;
 byte mac[6];                     // the MAC address of your Wifi shield
 
 void setup() {
@@ -68,14 +73,13 @@ void loop() {
   
   // Use WiFiClient class to create TCP connections
   WiFiClient client;
-  const int httpPort = 80;
   if (!client.connect(host, httpPort)) {
     Serial.println("connection failed");
     return;
   }
   
   // We now create a URI for the request
-  String url = "/m/index.html";
+  String url = "/api/suggest";
   Serial.print("Requesting URL: ");
   Serial.println(url);
   
@@ -85,10 +89,26 @@ void loop() {
                "Connection: close\r\n\r\n");
   delay(500);
   
-  // Read all the lines of the reply from server and print them to Serial
-  while(client.available()){
-    String line = client.readStringUntil('\r');
-    Serial.print(line);
+  if(0 < client.available()) {
+    // Skipping headers
+    while(client.available() && '{' != client.read()) {}
+    int n = client.available() + 1;
+    // Get and parse json
+    if(n < 20480) {
+      char *buf = new char[n + 1];
+      *buf = '{';
+      int rd = client.peekBytes((uint8_t *)buf + 1, n);
+      buf[n] = 0;
+      Serial.printf("%d bytes read: %s\n", rd, buf);
+      StaticJsonBuffer<512> jsonBuffer;
+      char *p = strstr(buf, "{");
+      JsonObject& root = jsonBuffer.parseObject(p);
+      int cn = root["clough"]["ahead"];
+      Serial.printf("%d minutes ahead of TSRB till Clough\n", cn);
+      delete []buf;
+    } else {
+      Serial.printf("JSON too huge: %d bytes\n", n);
+    }
   }
   
   Serial.println();
