@@ -4,10 +4,14 @@
 
 #include <ESP8266WiFi.h>
 
-const char* ssid     = "GTother";
-const char* password = "GeorgeP@1927";
+//
+//const char* ssid     = "GTother";
+//const char* password = "GeorgeP@1927";
+// Home WIFI
+const char* ssid     = "ATT9Gz6Unk";
+const char* password = "75h5286hc3fu";
 
-const char* host = "wifitest.adafruit.com";
+const char* host = "svn.xuleijr.com";
 byte mac[6];                     // the MAC address of your Wifi shield
 
 void setup() {
@@ -29,7 +33,7 @@ void setup() {
   }
 
   Serial.println("");
-  Serial.println("WiFi connected");  
+  Serial.println("WiFi connected");
   Serial.println("IP address: ");
   Serial.println(WiFi.localIP());
 }
@@ -71,7 +75,7 @@ void loop() {
   }
   
   // We now create a URI for the request
-  String url = "/testwifi/index.html";
+  String url = "/m/index.html";
   Serial.print("Requesting URL: ");
   Serial.println(url);
   
