@@ -69,8 +69,9 @@ router.get('/suggest', function(req, res) {
     res.json(answer)
 })
 var answer = {
-      "clough": {"next": [-1], "ahead": -1, "crowded": true}
-    , "klaus": {"next": [-1], "ahead": -1, "crowded": false}
+      "clough": {"next": [-1], "ahead": -1, "crowded": true, "walk": 9}
+    , "klaus": {"next": [-1], "ahead": -1, "crowded": false, "walk": 7}
+    , "c2k": {"walk": 4 }
 }
 
 var user_agent = "Mozilla/5.0"
@@ -166,12 +167,19 @@ restart_session()
 
 // Results from geo coding
 // Technology Square Research Building, 5th Street Northwest, Atlanta, GA
-var origin = {"lat":33.777362, "lng":-84.390098}
+var techsqua = {"lat":33.777362, "lng":-84.390098, "n": "techsqua"}
 // Klaus Advanced Computing Building, 266 Ferst Dr NW, Atlanta, GA 30332
-var dest_k = {"lat":33.777191, "lng":-84.396202, "t": "klaus"}
+var klaus = {"lat":33.777191, "lng":-84.396202, "n": "klaus"}
 // Clough Undergraduate Learning Commons, 266 4th Street Northwest, Atlanta, GA 30313
-var dest_c = {"lat":33.774920, "lng":-84.396415, "t": "clough"}
-var agm_rec = {"i": 0, "working": false, "list": [dest_c, dest_k]}
+var clough = {"lat":33.774920, "lng":-84.396415, "n": "clough"}
+var queries = [
+      {"o": techsqua, "d": klaus, "m": "driving", "t": "klaus", "f": "ahead"}
+    , {"o": techsqua, "d": clough, "m": "driving", "t": "clough", "f": "ahead"}
+    , {"o": techsqua, "d": klaus, "m": "walking", "t": "klaus", "f": "walk"}
+    , {"o": techsqua, "d": clough, "m": "walking", "t": "clough", "f": "walk"}
+    , {"o": klaus, "d": clough, "m": "walking", "t": "c2k", "f": "walk"}
+]
+var agm_rec = {"i": 0, "working": false, "list": queries}
 
 function ask_google_maps() {
     if(agm_rec["working"]) {
@@ -179,13 +187,9 @@ function ask_google_maps() {
         return
     }
     agm_rec["working"] = true 
-    var dest = agm_rec["list"][agm_rec["i"] % agm_rec["list"].length]
-    var opts = {
-        "origin": [origin["lat"], origin["lng"]]
-        ,"destination": [dest["lat"], dest["lng"]] 
-        ,"mode": "driving" // driving, walking, cycling, or transit
-        ,"optimize": true
-    }
+    var q = agm_rec["list"][agm_rec["i"] % agm_rec["list"].length]
+    // driving, walking, cycling, or transit
+    var opts = { "origin": q.o ,"destination": q.d ,"mode": q.m ,"optimize": true }
     googleMapsClient.directions(opts, function(err, response) {
       if ((!err) && (0 < response.json.routes.length)) {
         var r0 = response.json.routes[0]
@@ -194,9 +198,10 @@ function ask_google_maps() {
             console.log("No sections found by Google:( ")
         } else {
             var seconds = r0.legs[0].duration.value
-            console.log("\tIt takes %d seconds' drive to %s", seconds, dest.t)
-            if(dest["t"] in answer) {
-                answer[dest["t"]]["ahead"] = seconds / 60.0
+            console.log("\tIt takes %d seconds' %s from %s to %s", seconds, q.m, q.o.n, q.d.n)
+            if(q["t"] in answer) {
+                answer[q["t"]][q["f"]] = seconds / 60.0
+                nav_stats.insert({"o": q.o.n, "d": q.d.n, "sec": seconds, "ts": new Date().getTime()})
             }
         }
       } else {
@@ -208,5 +213,10 @@ function ask_google_maps() {
 }
 setTimeout(ask_google_maps, 100)
 setTimeout(ask_google_maps, 2600)
-setInterval(ask_google_maps, 10 * 1000)
+setInterval(ask_google_maps, 6 * 1000)
+
+// Record google api results
+var tingo = require('tingodb')();
+var db = new tingo.Db(__dirname + '/db', {});
+var nav_stats = db.collection("nav")
 
