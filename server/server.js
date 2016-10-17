@@ -88,8 +88,8 @@ var api_headers = {
 }
 var ask_interval_id = null
 var entries = [
-      {"a": "georgia-tech", "r": "trolley", "s": "techsqua", "d": "hub"}
-    , {"a": "georgia-tech", "r": "tech", "s": "techsqua", "d": "clough"}
+      {"a": "georgia-tech", "r": "trolley", "s": "techsqua", "d": "hub", "t": "klaus"}
+    , {"a": "georgia-tech", "r": "tech", "s": "techsqua", "d": "clough", "t": "clough"}
 ]
 var key = "f87420183e937d06913347ded6d8777a" // default
 function ask_next_bus() {
@@ -108,14 +108,26 @@ function query_api(r) {
         var params = {"coincident": true, "direction": r.d, "key": key, "timestamp": new Date().getTime()}
         var template = "/api/pub/v1/agencies/%s/routes/%s/stops/%s/predictions?%s"
         var path = util.format(template, r.a, r.r, r.s, qs.stringify(params))
-        console.log("path = %s", path)
+        //console.log("path = %s", path)
         http.get({
               "host": "www.nextbus.com"
             , "path": path
             , "headers": api_headers
         }, function(res) {
             res.on("data", function(chunk) {
-                console.log("API Body: " + chunk)
+                console.log("Next-Bus API body of %d bytes, ",
+                     chunk.length)
+                var ro = JSON.parse(chunk)
+                console.log("\tContents contains %d object(s) and %d values.", 
+                    ro.length, 0 == ro.length? 0 : ro[0].values.length) 
+                var next = [-1]
+                if(0 < ro.length && ro[0].hasOwnProperty("values") && 0 < ro[0]["values"].length) {
+                    var next = ro[0].values.map(function(d) { return d["minutes"] })
+                }
+                if(r["t"] in answer) {
+                    answer[r["t"]]["next"] = next
+                    console.log("\tBus predictions for %s updated to %j. ", r["t"], next)
+                }
             })
         }).on("error", function(err) {
             console.log("API query error, %s, restart session in 5 seconds...", error.message)
@@ -133,7 +145,7 @@ function restart_session() {
     http.get(home_req_opts, function(res) {
         if('set-cookie' in res.headers) {
             api_headers["cookie"] = res.headers["set-cookie"]
-            console.log("Cookie recorded:D")
+            console.log("Next-Bus Cookie recorded:D")
         }
         restarting = false
         // Really do not care about the content of this request
@@ -162,13 +174,11 @@ var dest_c = {"lat":33.774920, "lng":-84.396415, "t": "clough"}
 var agm_rec = {"i": 0, "working": false, "list": [dest_c, dest_k]}
 
 function ask_google_maps() {
-    console.log("Asking google...")
     if(agm_rec["working"]) {
         console.log("Google maps queries underway, skipping echo attempts...")
         return
     }
     agm_rec["working"] = true 
-    console.log("Issuing request...")
     var dest = agm_rec["list"][agm_rec["i"] % agm_rec["list"].length]
     var opts = {
         "origin": [origin["lat"], origin["lng"]]
@@ -176,16 +186,15 @@ function ask_google_maps() {
         ,"mode": "driving" // driving, walking, cycling, or transit
         ,"optimize": true
     }
-    console.log("Current dest: %j, with opts: %j", dest, opts)
     googleMapsClient.directions(opts, function(err, response) {
       if ((!err) && (0 < response.json.routes.length)) {
         var r0 = response.json.routes[0]
-        console.log("%d routs found, r0 has %d sections ", response.json.routes.length, r0.legs.length)
+        console.log("Google maps returned %d routs, r0 has %d sections ", response.json.routes.length, r0.legs.length)
         if(0 == r0.legs.length) {
-            console.log("No sections found! ")
+            console.log("No sections found by Google:( ")
         } else {
             var seconds = r0.legs[0].duration.value
-            console.log("It takes %d seconds' drive to %s", seconds, dest.t)
+            console.log("\tIt takes %d seconds' drive to %s", seconds, dest.t)
             if(dest["t"] in answer) {
                 answer[dest["t"]]["ahead"] = seconds / 60.0
             }
