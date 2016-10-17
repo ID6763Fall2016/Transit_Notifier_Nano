@@ -15,25 +15,6 @@ var qs = require('querystring')
 var googleMapsClient = require('@google/maps').createClient({
   key: 'AIzaSyBYTloS16XiccPBifkrROzkjgZnlpgZaqg'
 })
-// results from geo coding
-// {"lat":33.777362, "lng":-84.390098} for Moe's Southwest Grill, 85 5th St NW, Atlanta, GA 30308
-// {"lat":33.777362, "lng":-84.390098} for Technology Square Research Building, 5th Street Northwest, Atlanta, GA
-// {"lat":33.777191, "lng":-84.396202} for Klaus Advanced Computing Building, 266 Ferst Dr NW, Atlanta, GA 30332
-// {"lat":33.774920, "lng":-84.396415} for Clough Undergraduate Learning Commons, 266 4th Street Northwest, Atlanta, GA 30313
-
-googleMapsClient.directions({
-    "origin": [33.776902, -84.389960]
-    ,"destination": [33.775216, -84.396134]
-    ,"mode": "driving" // driving, walking, cycling, or transit
-    ,"optimize": true
-}, function(err, response) {
-  if (!err) {
-    console.log("%d routs found, r0 has %d sections ", response.json.routes.length, response.json.routes[0].legs.length)
-    console.log(JSON.stringify(response.json.routes[0].legs[0].duration, undefined, 2))
-  } else {
-    console.log(e.message)
-  }
-});
 
 var bodyParser = require('body-parser');
 // configure app to use bodyParser()
@@ -165,9 +146,58 @@ function restart_session() {
     }).on("error", function(e) {
         restarting = false
         console.log("Got error, %s, retry in 5 seconds...", error.message)
-        setTimeout(restart_session, 5000)
+        setTimeout(restart_session, 15 * 1000)
     })
 }
 
 restart_session()
+
+// Results from geo coding
+// Technology Square Research Building, 5th Street Northwest, Atlanta, GA
+var origin = {"lat":33.777362, "lng":-84.390098}
+// Klaus Advanced Computing Building, 266 Ferst Dr NW, Atlanta, GA 30332
+var dest_k = {"lat":33.777191, "lng":-84.396202, "t": "klaus"}
+// Clough Undergraduate Learning Commons, 266 4th Street Northwest, Atlanta, GA 30313
+var dest_c = {"lat":33.774920, "lng":-84.396415, "t": "clough"}
+var agm_rec = {"i": 0, "working": false, "list": [dest_c, dest_k]}
+
+function ask_google_maps() {
+    console.log("Asking google...")
+    if(agm_rec["working"]) {
+        console.log("Google maps queries underway, skipping echo attempts...")
+        return
+    }
+    agm_rec["working"] = true 
+    console.log("Issuing request...")
+    var dest = agm_rec["list"][agm_rec["i"] % agm_rec["list"].length]
+    var opts = {
+        "origin": [origin["lat"], origin["lng"]]
+        ,"destination": [dest["lat"], dest["lng"]] 
+        ,"mode": "driving" // driving, walking, cycling, or transit
+        ,"optimize": true
+    }
+    console.log("Current dest: %j, with opts: %j", dest, opts)
+    googleMapsClient.directions(opts, function(err, response) {
+      if ((!err) && (0 < response.json.routes.length)) {
+        var r0 = response.json.routes[0]
+        console.log("%d routs found, r0 has %d sections ", response.json.routes.length, r0.legs.length)
+        if(0 == r0.legs.length) {
+            console.log("No sections found! ")
+        } else {
+            var seconds = r0.legs[0].duration.value
+            console.log("It takes %d seconds' drive to %s", seconds, dest.t)
+            if(dest["t"] in answer) {
+                answer[dest["t"]]["ahead"] = seconds / 60.0
+            }
+        }
+      } else {
+        console.log(e.message)
+      }
+      agm_rec["working"] = false
+      agm_rec["i"] ++
+    });
+}
+setTimeout(ask_google_maps, 100)
+setTimeout(ask_google_maps, 2600)
+setInterval(ask_google_maps, 10 * 1000)
 
