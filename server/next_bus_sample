@@ -1,0 +1,2 @@
+[{"serverTimestamp":1476664974083,"route":{"id":"ASC","title":"A Line King Historic District - Centennial Olympic Park","color":"636199","textColor":"ffffff","hidden":false},"stop":{"id":"4560589","lat":33.7555599,"lon":-84.37468,"name":"King Historic District","code":"4560589","hidden":false,"showDestinationSelector":true,"route":"ASC"},"values":[{"timestamp":1476664980000,"minutes":0,"affectedByLayover":true,"isDeparture":true,"vehicleId":"1001","direction":{"id":"ASC_0_var1","name":"Centennial Olympic Park","destinationName":"Centennial Olympic Park"}}]}]
+

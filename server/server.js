@@ -9,6 +9,9 @@ var app        = express()                 // define our app using express
 app.use('/m', express.static("static"))
 var http = require("http")
 var http_server = http.createServer(app)
+var fs = require("fs")
+var util = require("util")
+var qs = require('querystring')
 
 var bodyParser = require('body-parser');
 // configure app to use bodyParser()
@@ -69,42 +72,76 @@ var answer = {
 
 var user_agent = "Mozilla/5.0"
 var home_req_opts = {
-    "host": "www.nextbus.com"
+      "host": "www.nextbus.com"
     , "path": "/"
     , "headers": {
           "user-agent": user_agent
     }
 }
 var api_headers = {
-    "referer": "http://www.nextbus.com"
+      "referer": "http://www.nextbus.com"
     , "cookie": ""
     , "user-agent": user_agent
 }
 var ask_interval_id = null
+var entries = [
+      {"a": "georgia-tech", "r": "trolley", "s": "techsqua", "d": "hub"}
+    , {"a": "georgia-tech", "r": "tech", "s": "techsqua", "d": "clough"}
+]
+var key = "f87420183e937d06913347ded6d8777a" // default
 function ask_next_bus() {
-    http.get({
-        "host": "www.nextbus.com"
-        , "path": "/api/pub/v1/agencies/atlanta-sc/routes/ASC/stops/4560589/predictions?coincident=true&direction=ASC_0_var1&key=f87420183e937d06913347ded6d8777a&timestamp=" + new Date().getTime()
-        , "headers": api_headers
-    }, function(res) {
-        res.on("data", function(chunk) {
-            console.log("API Body: " + chunk)
-        })
-    }).on("error", function(err) {
-        console.log("API query error, %s, restart session in 5 seconds...", error.message)
-        setTimeout(restart_session, 5000)
+    // Reload key, which will be manually updated for now, daily, not so bad
+    fs.readFile("next_bus_key", function(err, data) {
+        if(err) {
+            console.log("Error reading key: %s\nUsing old one: %s\n", err.message, key)
+        } else {
+            key = String(data).trim()
+        }
+        query_api(entries[0])
+        query_api(entries[1])
     })
 }
+function query_api(r) {
+        var params = {"coincident": true, "direction": r.d, "key": key, "timestamp": new Date().getTime()}
+        var template = "/api/pub/v1/agencies/%s/routes/%s/stops/%s/predictions?%s"
+        var path = util.format(template, r.a, r.r, r.s, qs.stringify(params))
+        console.log("path = %s", path)
+        http.get({
+              "host": "www.nextbus.com"
+            , "path": path
+            , "headers": api_headers
+        }, function(res) {
+            res.on("data", function(chunk) {
+                console.log("API Body: " + chunk)
+            })
+        }).on("error", function(err) {
+            console.log("API query error, %s, restart session in 5 seconds...", error.message)
+            if(null != ask_interval_id) {
+                clearInterval(ask_interval_id)
+                ask_interval_id = null
+            }
+            setTimeout(restart_session, 5000)
+        })
+}
 
+var restarting = false;
 function restart_session() {
+    if(restarting) return
     http.get(home_req_opts, function(res) {
         if('set-cookie' in res.headers) {
             api_headers["cookie"] = res.headers["set-cookie"]
             console.log("Cookie recorded:D")
         }
+        restarting = false
+        // Really do not care about the content of this request
         res.resume()
+        if(null != ask_interval_id) {
+            clearInterval(ask_interval_id)
+            ask_interval_id = null
+        }
         ask_interval_id = setInterval(ask_next_bus, 5000)
     }).on("error", function(e) {
+        restarting = false
         console.log("Got error, %s, retry in 5 seconds...", error.message)
         setTimeout(restart_session, 5000)
     })
