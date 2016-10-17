@@ -15,8 +15,12 @@ var qs = require('querystring')
 var googleMapsClient = require('@google/maps').createClient({
   key: 'AIzaSyBYTloS16XiccPBifkrROzkjgZnlpgZaqg'
 })
-//googleMapsClient.geocode({
-//  address: '1600 Amphitheatre Parkway, Mountain View, CA'
+// results from geo coding
+// {"lat":33.777362, "lng":-84.390098} for Moe's Southwest Grill, 85 5th St NW, Atlanta, GA 30308
+// {"lat":33.777362, "lng":-84.390098} for Technology Square Research Building, 5th Street Northwest, Atlanta, GA
+// {"lat":33.777191, "lng":-84.396202} for Klaus Advanced Computing Building, 266 Ferst Dr NW, Atlanta, GA 30332
+// {"lat":33.774920, "lng":-84.396415} for Clough Undergraduate Learning Commons, 266 4th Street Northwest, Atlanta, GA 30313
+
 googleMapsClient.directions({
     "origin": [33.776902, -84.389960]
     ,"destination": [33.775216, -84.396134]
@@ -109,7 +113,7 @@ var entries = [
 var key = "f87420183e937d06913347ded6d8777a" // default
 function ask_next_bus() {
     // Reload key, which will be manually updated for now, daily, not so bad
-    fs.readFile("next_bus_key", function(err, data) {
+    fs.readFile("etc/next_bus_key", function(err, data) {
         if(err) {
             console.log("Error reading key: %s\nUsing old one: %s\n", err.message, key)
         } else {
