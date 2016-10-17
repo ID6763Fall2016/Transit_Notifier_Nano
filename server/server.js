@@ -12,6 +12,24 @@ var http_server = http.createServer(app)
 var fs = require("fs")
 var util = require("util")
 var qs = require('querystring')
+var googleMapsClient = require('@google/maps').createClient({
+  key: 'AIzaSyBYTloS16XiccPBifkrROzkjgZnlpgZaqg'
+})
+//googleMapsClient.geocode({
+//  address: '1600 Amphitheatre Parkway, Mountain View, CA'
+googleMapsClient.directions({
+    "origin": [33.776902, -84.389960]
+    ,"destination": [33.775216, -84.396134]
+    ,"mode": "driving" // driving, walking, cycling, or transit
+    ,"optimize": true
+}, function(err, response) {
+  if (!err) {
+    console.log("%d routs found, r0 has %d sections ", response.json.routes.length, response.json.routes[0].legs.length)
+    console.log(JSON.stringify(response.json.routes[0].legs[0].duration, undefined, 2))
+  } else {
+    console.log(e.message)
+  }
+});
 
 var bodyParser = require('body-parser');
 // configure app to use bodyParser()
