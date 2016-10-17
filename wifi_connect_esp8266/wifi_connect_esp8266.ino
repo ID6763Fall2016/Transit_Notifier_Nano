@@ -15,8 +15,10 @@ const char* password = "75h5286hc3fu";
 const char host[] = "chi01.xuleijr.com";
 const char path[] = "/api/suggest";
 const uint16_t port = 8080;
-const char *header_keys[] = {"User-Agent","Set-Cookie","Cookie","Date","Content-Type","Content-Length"} ;
-size_t header_cnt = sizeof(header_keys)/sizeof(char*);
+const char *header_keys[] = {
+  "User-Agent", "Set-Cookie", "Cookie", "Date", "Content-Type", "Content-Length"
+};
+size_t header_cnt = sizeof(header_keys) / sizeof(char*);
 HTTPClient http;
 
 byte mac[6];                     // the MAC address of your Wifi shield
@@ -69,6 +71,6 @@ void iwconfig() {
   //print mac address
   WiFi.macAddress(mac);
   for(int i = 0; i < 6; i++) {
-    Serial.printf(0 == i? "MAC: %X" : ":%x", mac[i]);
+    Serial.printf(0 == i? "MAC: %X" : ":%X", mac[i]);
   }
 }
