@@ -6,11 +6,11 @@
 #include <ArduinoJson.h>
 
 // GT config
-//const char* ssid     = "GTother";
-//const char* password = "GeorgeP@1927";
+const char* ssid     = "GTother";
+const char* password = "GeorgeP@1927";
 // Home WIFI
-const char* ssid     = "ATT9Gz6Unk";
-const char* password = "75h5286hc3fu";
+//const char* ssid     = "ATT9Gz6Unk";
+//const char* password = "75h5286hc3fu";
 
 const char host[] = "chi01.xuleijr.com";
 const char path[] = "/api/suggest";
@@ -57,9 +57,10 @@ void loop() {
     const String &content = http.getString();
     Serial.println(content);
     JsonObject& root = jsonBuffer.parseObject(content);
-    int cn = root["clough"]["ahead"];
-    Serial.printf("%d minutes ahead of TSRB till Clough\n", cn);
+    double ca = root["clough"]["ahead"];
+    Serial.printf("%lf minutes ahead of TSRB till Clough\n", ca);
   } else {
+    iwconfig();
     // TODO use led or dot start to indicate network failure. 
   }
   http.end();
