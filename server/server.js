@@ -127,11 +127,12 @@ function query_api(r) {
                 }
                 if(r["t"] in answer) {
                     answer[r["t"]]["next"] = next
-                    console.log("\tBus predictions for %s updated to %j. ", r["t"], next)
+                    console.log("\tBus predictions for %s updated to [ %s ]. ", 
+                        chalk.yellow(r["t"]), chalk.green(next.join(", ")))
                 }
             })
         }).on("error", function(err) {
-            console.log("API query error, %s, restart session in 5 seconds...", error.message)
+            console.log("Next-Bus API query error: %s, restart session in 5 seconds...", err.message)
             if(null != ask_interval_id) {
                 clearInterval(ask_interval_id)
                 ask_interval_id = null
@@ -198,7 +199,8 @@ function ask_google_maps() {
             console.log("No sections found by Google:( ")
         } else {
             var seconds = r0.legs[0].duration.value
-            console.log("\tIt takes %d seconds' %s from %s to %s", seconds, q.m, q.o.n, q.d.n)
+            console.log("\tIt takes %s seconds' %s from %s to %s", 
+                chalk.green(seconds), q.m, chalk.yellow(q.o.n), chalk.yellow(q.d.n))
             if(q["t"] in answer) {
                 answer[q["t"]][q["f"]] = seconds / 60.0
                 nav_stats.insert({"o": q.o.n, "d": q.d.n, "sec": seconds, "ts": new Date().getTime()})
