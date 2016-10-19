@@ -20,13 +20,13 @@
 Adafruit_DotStar strip = Adafruit_DotStar(
   NUMPIXELS, DATAPIN, CLOCKPIN, DOTSTAR_BGR);
 int8_t ranges[][4][2] = {
-  /*klaus*/ { /*trolley*/{11, 16}, /*exp*/{0, 5}, /*walk*/{6, 10}, /*4: all*/{0, 16}}, 
-  /*clough*/{ /*exp*/{32, 37}, /*trolley*/{21, 25}, /*walk*/{27, 31}, /*4: all */{21, 37}}
+  /*klaus*/ { /*trolley*/{13, 18}, /*exp*/{2, 7}, /*walk*/{8, 12}, /*4: all*/{2, 18}}, 
+  /*clough*/{ /*exp*/{34, 39}, /*trolley*/{23, 27}, /*walk*/{29, 33}, /*4: all */{23, 39}}
 };
 
 uint32_t colors[][4] = {
-  {0xce8323, 0xFFFF00, 0x11F303, 0x1229E9},
-  {0xFFFF00, 0xce8323, 0x11F303, 0x1229E9}
+  {0xce8323, 0xFFFF00, 0xFFFFFF, 0x1229E9},
+  {0xFFFF00, 0xce8323, 0xFFFFFF, 0x1229E9}
 };
 
 uint32_t pulse_colors[][5] = {
@@ -56,6 +56,11 @@ void setup() {
   strip.begin();
   for(int i = 0; i < NUMPIXELS; i++) {
     strip.setPixelColor(i, 0);
+  }
+  for(int j = 0; j < 2; j++) {
+    for(int i = ranges[j][2][0]; i < ranges[j][2][1]; i++) {
+      strip.setPixelColor(i, 0xFF8000);
+    }
   }
   strip.show();
   
