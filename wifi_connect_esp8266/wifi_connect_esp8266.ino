@@ -46,6 +46,12 @@ HTTPClient http;
 byte mac[6];                     // the MAC address of your Wifi shield
 
 void setup() {
+  strip.begin();
+  for(int i = 0; i < NUMPIXELS; i++) {
+    strip.setPixelColor(i, 0);
+  }
+  strip.show();
+  
   Serial.begin(115200);
   delay(100);
 
@@ -63,12 +69,6 @@ void setup() {
   
   http.setReuse(true);
   http.collectHeaders(header_keys, header_cnt);
-  
-  strip.begin();
-  for(int i = 0; i < NUMPIXELS; i++) {
-    strip.setPixelColor(i, 0);
-  }
-  strip.show();
 }
 
 void loop() {
@@ -85,6 +85,8 @@ void loop() {
     const String &content = http.getString();
     Serial.println(content);
     JsonObject& root = jsonBuffer.parseObject(content);
+    double ca = root["clough"]["ahead"];
+    Serial.printf("%lf minutes ahead of TSRB till Clough\n", ca);
     int c = suggest(root, "clough", "klaus");
     int k = suggest(root, "klaus", "clough");
     Serial.printf("Suggestion: clough = %d, klaus = %d\n", c, k);
@@ -111,6 +113,7 @@ uint8_t suggest(JsonObject &root, const char *major, const char *alt) {
   n1 += a1 + w1;
   
   double n2 = root[major]["walk"];
+  Serial.printf("n0 = %lf, n1 = %lf, n2 = %lf\n", n0, n1, n2);
   
   return n0 < n1? (n0 < n2? 0 : 2) : (n1 < n2? 1 : 2);
 }
@@ -119,15 +122,12 @@ int8_t prior[] = {-1, -1};
 void light_up(int8_t id, int8_t suggestion, bool pulse) {
   int8_t s0 = prior[id];
   Serial.printf("p0, id = %d, suggestion = %d\n", id, suggestion);
-  Serial.println("p1");
   if(suggestion != s0) {
-    Serial.println("p2");
     if(0 <= s0 && s0 < 3) {
       for(int i = ranges[id][s0][0]; i < ranges[id][s0][1]; i++) {
         strip.setPixelColor(i, 0);
       }
     }
-    Serial.printf("p3 %d to %d\n", ranges[id][suggestion][0], ranges[id][suggestion][1]);
     for(int i = ranges[id][suggestion][0]; i < ranges[id][suggestion][1]; i++) {
       uint32_t c = colors[id][suggestion];
       Serial.printf("Setting pixel %d to #%X\n", i, c);
