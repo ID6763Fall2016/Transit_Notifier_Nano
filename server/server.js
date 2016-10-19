@@ -68,10 +68,11 @@ router.get('/', function(req, res) {
 router.get('/suggest', function(req, res) {
     res.json(answer)
 })
-var answer = {
-      "clough": {"next": [-1], "ahead": -1, "crowded": true, "walk": 9}
-    , "klaus": {"next": [-1], "ahead": -1, "crowded": false, "walk": 7}
-    , "c2k": {"walk": 4 }
+var missing = -1 // to save sapce
+var answer = { // c - clough, k - klaus, n - next, a - ahead, c - crowded, w - walk
+      "c": {"n": [missing], "a": missing, "c": 1, "w": 9}
+    , "k": {"n": [missing], "a": missing, "c": 0, "w": 7}
+    , "c2k": {"w": 4 }
 }
 
 var user_agent = "Mozilla/5.0"
@@ -89,8 +90,8 @@ var api_headers = {
 }
 var ask_interval_id = null
 var entries = [
-      {"a": "georgia-tech", "r": "trolley", "s": "techsqua", "d": "hub", "t": "klaus"}
-    , {"a": "georgia-tech", "r": "tech", "s": "techsqua", "d": "clough", "t": "clough"}
+      {"a": "georgia-tech", "r": "trolley", "s": "techsqua", "d": "hub", "t": "k"}
+    , {"a": "georgia-tech", "r": "tech", "s": "techsqua", "d": "clough", "t": "c"}
 ]
 var key = "f87420183e937d06913347ded6d8777a" // default
 function ask_next_bus() {
@@ -119,14 +120,14 @@ function query_api(r) {
                 console.log("Next-Bus API body of %d bytes, ",
                      chunk.length)
                 var ro = JSON.parse(chunk)
-                console.log("\tContents contains %d object(s) and %d values.", 
+                console.log("\tContents contains %d object(s) and %d values. ", 
                     ro.length, 0 == ro.length? 0 : ro[0].values.length) 
-                var next = [-1]
+                var next = [missing]
                 if(0 < ro.length && ro[0].hasOwnProperty("values") && 0 < ro[0]["values"].length) {
-                    var next = ro[0].values.map(function(d) { return d["minutes"] })
+                    var next = ro[0].values.map(function(d) { return Math.round(+d["minutes"] * 60) })
                 }
                 if(r["t"] in answer) {
-                    answer[r["t"]]["next"] = next
+                    answer[r["t"]]["n"] = next
                     console.log("\tBus predictions for %s updated to [ %s ]. ", 
                         chalk.yellow(r["t"]), chalk.green(next.join(", ")))
                 }
@@ -174,11 +175,11 @@ var klaus = {"lat":33.777191, "lng":-84.396202, "n": "klaus"}
 // Clough Undergraduate Learning Commons, 266 4th Street Northwest, Atlanta, GA 30313
 var clough = {"lat":33.774920, "lng":-84.396415, "n": "clough"}
 var queries = [
-      {"o": techsqua, "d": klaus, "m": "driving", "t": "klaus", "f": "ahead"}
-    , {"o": techsqua, "d": clough, "m": "driving", "t": "clough", "f": "ahead"}
-    , {"o": techsqua, "d": klaus, "m": "walking", "t": "klaus", "f": "walk"}
-    , {"o": techsqua, "d": clough, "m": "walking", "t": "clough", "f": "walk"}
-    , {"o": klaus, "d": clough, "m": "walking", "t": "c2k", "f": "walk"}
+      {"o": techsqua, "d": klaus, "m": "driving", "t": "k", "f": "a"}
+    , {"o": techsqua, "d": clough, "m": "driving", "t": "c", "f": "a"}
+    , {"o": techsqua, "d": klaus, "m": "walking", "t": "k", "f": "w"}
+    , {"o": techsqua, "d": clough, "m": "walking", "t": "c", "f": "w"}
+    , {"o": klaus, "d": clough, "m": "walking", "t": "c2k", "f": "w"}
 ]
 var agm_rec = {"i": 0, "working": false, "list": queries}
 
@@ -202,7 +203,7 @@ function ask_google_maps() {
             console.log("\tIt takes %s seconds' %s from %s to %s", 
                 chalk.green(seconds), q.m, chalk.yellow(q.o.n), chalk.yellow(q.d.n))
             if(q["t"] in answer) {
-                answer[q["t"]][q["f"]] = seconds / 60.0
+                answer[q["t"]][q["f"]] = seconds
                 nav_stats.insert({"o": q.o.n, "d": q.d.n, "sec": seconds, "ts": new Date().getTime()})
             }
         }
