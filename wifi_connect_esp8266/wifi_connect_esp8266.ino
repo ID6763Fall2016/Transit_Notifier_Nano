@@ -81,7 +81,7 @@ void loop() {
   int code = http.GET();
   Serial.printf("Received HTTP code: %d\n", code);
   if(HTTP_CODE_OK == code) {
-    StaticJsonBuffer<512> jsonBuffer;
+    StaticJsonBuffer<1024> jsonBuffer;
     const String &content = http.getString();
     Serial.println(content);
     JsonObject& root = jsonBuffer.parseObject(content);
