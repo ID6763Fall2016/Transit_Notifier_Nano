@@ -29,6 +29,11 @@ uint32_t colors[][4] = {
   {0xFFFF00, 0xce8323, 0x11F303, 0x1229E9}
 };
 
+uint32_t pulse_colors[][5] = {
+  {0xce8323, 0x674212, 0x322106, 0x161003, 0x0},
+  {0xFFFF00, 0x808000, 0x404000, 0x161600, 0x0}
+};
+
 // GT config
 const char* ssid     = "GTother";
 const char* password = "GeorgeP@1927";
@@ -74,7 +79,6 @@ void setup() {
 }
 
 void loop() {
-  delay(5000);
 
   Serial.printf("\n\nConnecting to %s\n", host);
   
@@ -82,20 +86,26 @@ void loop() {
   http.begin(host, port, path);
   int code = http.GET();
   Serial.printf("Received HTTP code: %d\n", code);
+  int pt = 0;
   if(HTTP_CODE_OK == code) {
     StaticJsonBuffer<512> jsonBuffer;
     const String &content = http.getString();
     Serial.println(content);
     JsonObject& root = jsonBuffer.parseObject(content);
-    int c = suggest(root, "c", "k");
-    int k = suggest(root, "k", "c");
-    light_up(KLAUS, k, false);
-    light_up(CLOUGH, c, false);
+    int sc = suggest(root, "c", "k");
+    int sk = suggest(root, "k", "c");
+    light_up(KLAUS, sk, false);
+    light_up(CLOUGH, sc, false);
+    bool ck = (1 == root["k"]["c"]); // crowdedness of trolley
+    bool cc = (1 == root["c"]["c"]); // ... of tech exp
+    Serial.printf("Trolley crowded = %d, Tech exp crowded = %d\n", ck, cc);
+    pt = pulse(sc, sk, cc, ck);
   } else {
     iwconfig();
     // TODO use led or dot start to indicate network failure. 
   }
   http.end();
+  delay(pt > 5000? 10 : (5000 - pt));
 }
 
 // 0 - direct bus
@@ -143,6 +153,44 @@ void light_up(int8_t id, int8_t suggestion, bool pulse) {
     prior[id] = suggestion;
   }
   // pulsing loop
+}
+
+int pulse(int sc, int sk, bool cc, bool ck) {
+  int cnt = 0;
+  if((0 == sc && cc) || (1 == sc && ck)) cnt ++;
+  if((0 == sk && ck) || (1 == sk && cc)) cnt ++;
+  Serial.printf("%d needs pulse\n", cnt);
+  if(0 == cnt) return 0;
+  int8_t *params = new int8_t[cnt * 6];
+  int idx = fill_params(params, cc, ck, 0, sc, CLOUGH);
+  idx = fill_params(params, ck, cc, idx, sk, KLAUS);
+    for(int m = 0; m < 2; m++) {
+    for(int k = 0; k < 5 * 2; k++) {
+      delay(50);
+      for(int i = 0; i < cnt; i++) {
+         Serial.printf("i0 = %d, i1 = %d, pi = %d, color seq = %d\n", 
+           params[i * 6 + 0],params[i * 6 + 1],params[i * 6 + 2],
+           params[i * 6 + 3]);
+         for(int8_t j = params[i * 6 + 0]; j < params[i * 6 + 1]; j++) {
+           uint32_t c = pulse_colors[params[i * 6 + 3]][k < 5? k : (5 * 2 - 1 - k)];
+           Serial.printf("Setting %d to color %X\n", j, c);
+           strip.setPixelColor(j, c);
+         }
+      }
+      strip.show();
+    }
+  }
+  return 250 * 9 * 2;
+}
+
+int fill_params(int8_t *p, bool c0, bool c1, int idx, int s, int8_t id) {
+  if((0 == s && c0) || (1 == s && c1)) {
+        p[idx * 6] = ranges[id][s][0];
+        p[idx * 6 + 1] = ranges[id][s][1];
+        p[idx * 6 + 2] = 0;
+        p[idx * 6 + 3] = id == KLAUS? s : (1 - s); // color sequence idx
+        return idx + 1;
+  } else return idx;
 }
 
 void iwconfig() {
