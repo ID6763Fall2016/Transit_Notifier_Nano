@@ -15,16 +15,18 @@
 #define CLOUGH 1
 #define KLAUS 0
 
+#define BUS_TIME(n, a) (-1 == n? 999999 : (n + a))
+
 Adafruit_DotStar strip = Adafruit_DotStar(
   NUMPIXELS, DATAPIN, CLOCKPIN, DOTSTAR_BGR);
-int8_t ranges[][3][2] = {
-  /*klaus*/ { /*trolley*/{11, 16}, /*exp*/{0, 5}, /*walk*/{6, 10}}, 
-  /*clough*/{ /*exp*/{32, 37}, /*trolley*/{21, 25}, /*walk*/{27, 31}}
+int8_t ranges[][4][2] = {
+  /*klaus*/ { /*trolley*/{11, 16}, /*exp*/{0, 5}, /*walk*/{6, 10}, /*4: all*/{0, 16}}, 
+  /*clough*/{ /*exp*/{32, 37}, /*trolley*/{21, 25}, /*walk*/{27, 31}, /*4: all */{21, 37}}
 };
 
 uint32_t colors[][4] = {
-  {0xc18b18, 0xfcff16, 0x11F303, 0x1229E9},
-  {0xfcff16, 0xc18b18, 0x11F303, 0x1229E9}
+  {0xce8323, 0xFFFF00, 0x11F303, 0x1229E9},
+  {0xFFFF00, 0xce8323, 0x11F303, 0x1229E9}
 };
 
 // GT config
@@ -81,15 +83,12 @@ void loop() {
   int code = http.GET();
   Serial.printf("Received HTTP code: %d\n", code);
   if(HTTP_CODE_OK == code) {
-    StaticJsonBuffer<1024> jsonBuffer;
+    StaticJsonBuffer<512> jsonBuffer;
     const String &content = http.getString();
     Serial.println(content);
     JsonObject& root = jsonBuffer.parseObject(content);
-    double ca = root["clough"]["ahead"];
-    Serial.printf("%lf minutes ahead of TSRB till Clough\n", ca);
-    int c = suggest(root, "clough", "klaus");
-    int k = suggest(root, "klaus", "clough");
-    Serial.printf("Suggestion: clough = %d, klaus = %d\n", c, k);
+    int c = suggest(root, "c", "k");
+    int k = suggest(root, "k", "c");
     light_up(KLAUS, k, false);
     light_up(CLOUGH, c, false);
   } else {
@@ -103,17 +102,19 @@ void loop() {
 // 1 - indirect bus + walk
 // 2 - walk only
 uint8_t suggest(JsonObject &root, const char *major, const char *alt) {
-  double n0 = root[major]["next"][0];
-  double a0 = root[major]["ahead"];
-  n0 += a0;
+  int n0 = root[major]["n"][0];
+  int a0 = root[major]["a"];
+//  printf("n0 = %d, a0 = %d\n", n0, a0);
+  n0 = BUS_TIME(n0, a0);
   
-  double n1 = root[alt]["next"][0];
-  double a1 = root[alt]["ahead"];
-  double w1 = root["c2k"]["walk"];
-  n1 += a1 + w1;
+  int n1 = root[alt]["n"][0];
+  int a1 = root[alt]["a"];
+  int w1 = root["c2k"]["w"];
+//  printf("n1 = %d, a1 = %d, w1 = %d\n", n1, a1, w1);
+  n1 = BUS_TIME(n1, a1 + w1);
   
-  double n2 = root[major]["walk"];
-  Serial.printf("n0 = %lf, n1 = %lf, n2 = %lf\n", n0, n1, n2);
+  int n2 = root[major]["w"];
+  Serial.printf("n0 = %d, n1 = %d, n2 = %d\n", n0, n1, n2);
   
   return n0 < n1? (n0 < n2? 0 : 2) : (n1 < n2? 1 : 2);
 }
@@ -123,15 +124,20 @@ void light_up(int8_t id, int8_t suggestion, bool pulse) {
   int8_t s0 = prior[id];
   Serial.printf("p0, id = %d, suggestion = %d\n", id, suggestion);
   if(suggestion != s0) {
-    if(0 <= s0 && s0 < 3) {
-      for(int i = ranges[id][s0][0]; i < ranges[id][s0][1]; i++) {
-        strip.setPixelColor(i, 0);
-      }
+    for(int i = ranges[id][3][0]; i < ranges[id][3][1]; i++) {
+      strip.setPixelColor(i, 0);
     }
     for(int i = ranges[id][suggestion][0]; i < ranges[id][suggestion][1]; i++) {
       uint32_t c = colors[id][suggestion];
       Serial.printf("Setting pixel %d to #%X\n", i, c);
       strip.setPixelColor(i, c);
+    }
+    if(1 == suggestion) { // partial walking
+      for(int i = ranges[id][2][0]; i < ranges[id][2][0] + 2; i++) {
+        uint32_t c = colors[id][3];
+        Serial.printf("Setting pixel %d to #%X\n", i, c);
+        strip.setPixelColor(i, c);
+      }
     }
     strip.show();
     prior[id] = suggestion;
