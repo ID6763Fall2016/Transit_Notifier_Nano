@@ -68,10 +68,20 @@ router.get('/', function(req, res) {
 router.get('/suggest', function(req, res) {
     res.json(answer)
 })
+router.get('/sim/:id/:value', function(req, res) {
+    var id = req.params.id
+    if(!(id in answer)) {
+        res.json({"msg": "Id not found"})
+        return
+    }
+    var value = req.params.value
+    answer[id]["c"] = "1" == value || "true" == value
+    res.json({"msg": id + " updated", "c": answer[id]["c"]})
+})
 var missing = -1 // to save sapce
 var answer = { // c - clough, k - klaus, n - next, a - ahead, c - crowded, w - walk
-      "c": {"n": [missing], "a": missing, "c": 1, "w": 9}
-    , "k": {"n": [missing], "a": missing, "c": 0, "w": 7}
+      "c": {"n": [missing], "a": missing, "c": 0, "w": 9}
+    , "k": {"n": [missing], "a": missing, "c": 1, "w": 7}
     , "c2k": {"w": 4 }
 }
 
@@ -158,9 +168,9 @@ function restart_session() {
             ask_interval_id = null
         }
         ask_interval_id = setInterval(ask_next_bus, 5000)
-    }).on("error", function(e) {
+    }).on("error", function(err) {
         restarting = false
-        console.log("Got error, %s, retry in 5 seconds...", error.message)
+        console.log("Got error, %s, retry in 5 seconds...", err.message)
         setTimeout(restart_session, 15 * 1000)
     })
 }
