@@ -29,7 +29,7 @@ var cfg_name = nconf.get("conf") || "conf.json"
 nconf.file({ "file": cfg_name })
 nconf.defaults({
 	      "port": 8080
-        , "google_key": "AIzaSyDa3irr6AsrZF8ta8PSKiFxSDTTiIhPKU8"
+        , "google-key": "AIzaSyDa3irr6AsrZF8ta8PSKiFxSDTTiIhPKU8"
 })
 var port = nconf.get("port")
 
@@ -37,10 +37,17 @@ http_server.listen(port)
 
 chalk = require("chalk")
 console.log(chalk.yellow('Magic happens on port %d'), port)
-
-var googleMapsClient = require('@google/maps').createClient({
-  key: nconf.get("google_key")
+var dir_clients = nconf.get("google-key").split(",").map(function(d) {
+    return require('@google/maps').createClient({
+      key: d
+    })
 })
+var dir_idx = 0;
+function get_dir_cli() {
+    var ret = dir_clients[dir_idx]
+    dir_idx = (dir_idx + 1) % dir_clients.length
+    return ret
+}
 
 // IO socket stuff
 var id2skt = {}
@@ -204,7 +211,7 @@ function ask_google_maps() {
     var q = agm_rec["list"][agm_rec["i"] % agm_rec["list"].length]
     // driving, walking, cycling, or transit
     var opts = { "origin": q.o ,"destination": q.d ,"mode": q.m ,"optimize": true }
-    googleMapsClient.directions(opts, function(err, response) {
+    get_dir_cli().directions(opts, function(err, response) {
       if ((!err) && (0 < response.json.routes.length)) {
         var r0 = response.json.routes[0]
         console.log("Google maps returned %d routs, r0 has %d sections ", response.json.routes.length, r0.legs.length)
