@@ -169,7 +169,7 @@ int pulse(int sc, int sk, bool cc, bool ck) {
   int8_t *params = new int8_t[cnt * 6];
   int idx = fill_params(params, cc, ck, 0, sc, CLOUGH);
   idx = fill_params(params, ck, cc, idx, sk, KLAUS);
-    for(int m = 0; m < 2; m++) {
+  for(int m = 0; m < 2; m++) {
     for(int k = 0; k < 5 * 2; k++) {
       delay(50);
       for(int i = 0; i < cnt; i++) {
