@@ -107,17 +107,6 @@ F 3 "" H 1150 1900 50  0000 C CNN
 	1    1150 1900
 	1    0    0    -1  
 $EndComp
-$Comp
-L +5V #PWR03
-U 1 1 5808FE65
-P 1150 1700
-F 0 "#PWR03" H 1150 1550 50  0001 C CNN
-F 1 "+5V" H 1150 1840 50  0000 C CNN
-F 2 "" H 1150 1700 50  0000 C CNN
-F 3 "" H 1150 1700 50  0000 C CNN
-	1    1150 1700
-	0    -1   -1   0   
-$EndComp
 Text GLabel 2250 1600 2    60   Input ~ 0
 15
 Text GLabel 3200 2300 3    60   Input ~ 0
@@ -132,17 +121,6 @@ F 2 "Pin_Headers:Pin_Header_Straight_1x04" H 4050 1750 50  0000 C CNN
 F 3 "" H 4050 1750 50  0000 C CNN
 	1    4050 1750
 	-1   0    0    1   
-$EndComp
-$Comp
-L +5V #PWR04
-U 1 1 5809075C
-P 4250 1600
-F 0 "#PWR04" H 4250 1450 50  0001 C CNN
-F 1 "+5V" H 4250 1740 50  0000 C CNN
-F 2 "" H 4250 1600 50  0000 C CNN
-F 3 "" H 4250 1600 50  0000 C CNN
-	1    4250 1600
-	0    1    1    0   
 $EndComp
 $Comp
 L GND #PWR05
@@ -178,17 +156,6 @@ Text GLabel 4250 950  2    60   Input ~ 0
 CC
 Text GLabel 4250 850  2    60   Input ~ 0
 CD
-$Comp
-L +5V #PWR06
-U 1 1 58090AFE
-P 4250 750
-F 0 "#PWR06" H 4250 600 50  0001 C CNN
-F 1 "+5V" H 4250 890 50  0000 C CNN
-F 2 "" H 4250 750 50  0000 C CNN
-F 3 "" H 4250 750 50  0000 C CNN
-	1    4250 750 
-	0    1    1    0   
-$EndComp
 $Comp
 L GND #PWR07
 U 1 1 58090B86
@@ -228,4 +195,10 @@ NoConn ~ 1150 1000
 NoConn ~ 1150 1500
 Wire Wire Line
 	3200 2200 3200 2300
+Text GLabel 4250 1600 2    60   Input ~ 0
+V+
+Text GLabel 4250 750  2    60   Input ~ 0
+V+
+Text GLabel 1150 1700 0    60   Input ~ 0
+V+
 $EndSCHEMATC

@@ -82,7 +82,7 @@ F 3 "" H 3200 2050 50  0000 C CNN
 	1    0    0    -1  
 $EndComp
 Text GLabel 2250 1700 2    60   Input ~ 0
-3V
+VCC
 Text GLabel 3200 750  1    60   Input ~ 0
 15
 $Comp
@@ -121,7 +121,7 @@ $EndComp
 Text GLabel 2250 1600 2    60   Input ~ 0
 15
 Text GLabel 3200 2300 3    60   Input ~ 0
-3V
+VCC
 $Comp
 L CONN_01X04 P4
 U 1 1 580905C2
