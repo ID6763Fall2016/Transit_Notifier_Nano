@@ -12,9 +12,6 @@ var http_server = http.createServer(app)
 var fs = require("fs")
 var util = require("util")
 var qs = require('querystring')
-var googleMapsClient = require('@google/maps').createClient({
-  key: 'AIzaSyBYTloS16XiccPBifkrROzkjgZnlpgZaqg'
-})
 
 var bodyParser = require('body-parser');
 // configure app to use bodyParser()
@@ -31,7 +28,8 @@ nconf.argv().env()
 var cfg_name = nconf.get("conf") || "conf.json"
 nconf.file({ "file": cfg_name })
 nconf.defaults({
-	  "port": 8080
+	      "port": 8080
+        , "google-key": "AIzaSyDa3irr6AsrZF8ta8PSKiFxSDTTiIhPKU8"
 })
 var port = nconf.get("port")
 
@@ -39,6 +37,17 @@ http_server.listen(port)
 
 chalk = require("chalk")
 console.log(chalk.yellow('Magic happens on port %d'), port)
+var dir_clients = nconf.get("google-key").split(",").map(function(d) {
+    return require('@google/maps').createClient({
+      key: d
+    })
+})
+var dir_idx = 0;
+function get_dir_cli() {
+    var ret = dir_clients[dir_idx]
+    dir_idx = (dir_idx + 1) % dir_clients.length
+    return ret
+}
 
 // IO socket stuff
 var id2skt = {}
@@ -130,11 +139,11 @@ function query_api(r) {
                 console.log("Next-Bus API body of %d bytes, ",
                      chunk.length)
                 var ro = JSON.parse(chunk)
-                console.log("\tContents contains %d object(s) and %d values. ", 
-                    ro.length, 0 == ro.length? 0 : ro[0].values.length) 
                 var next = [missing]
                 if(0 < ro.length && ro[0].hasOwnProperty("values") && 0 < ro[0]["values"].length) {
                     var next = ro[0].values.map(function(d) { return Math.round(+d["minutes"] * 60) })
+                } else {
+                    console.log("Next-Bus API response not useful: %s", chunk)
                 }
                 if(r["t"] in answer) {
                     answer[r["t"]]["n"] = next
@@ -202,7 +211,7 @@ function ask_google_maps() {
     var q = agm_rec["list"][agm_rec["i"] % agm_rec["list"].length]
     // driving, walking, cycling, or transit
     var opts = { "origin": q.o ,"destination": q.d ,"mode": q.m ,"optimize": true }
-    googleMapsClient.directions(opts, function(err, response) {
+    get_dir_cli().directions(opts, function(err, response) {
       if ((!err) && (0 < response.json.routes.length)) {
         var r0 = response.json.routes[0]
         console.log("Google maps returned %d routs, r0 has %d sections ", response.json.routes.length, r0.legs.length)
@@ -226,7 +235,7 @@ function ask_google_maps() {
 }
 setTimeout(ask_google_maps, 100)
 setTimeout(ask_google_maps, 2600)
-setInterval(ask_google_maps, 6 * 1000)
+setInterval(ask_google_maps, 40 * 1000)
 
 // Record google api results
 var tingo = require('tingodb')();
