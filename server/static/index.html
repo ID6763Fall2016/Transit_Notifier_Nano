@@ -1,0 +1,172 @@
+<html>
+<head>
+	<meta charset="UTF-8"><meta name="robots" content="noindex">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script type="text/javascript" src="lib/d3.v3.min.js"></script>
+	<link rel="stylesheet prefetch" href="//codepen.io/assets/reset/normalize.css">
+<style class="cp-pen-styles">p,div {
+    font-family: "lucida grande",tahoma,verdana,arial,sans-serif;
+    font-size: 13px;
+    line-height: 25px;
+}
+
+
+.t2 { font-size: 150%; }
+
+/*float*/
+.fl { float: left; }
+.fr { float: right; }
+.fn { float: none; }
+
+.title { padding-left: 260px;}
+
+.y-axis path {
+  fill: none;
+  stroke: none;
+}
+.y-axis line, .string,
+.x-axis path, .x-axis line {
+  fill: none;
+  stroke: #797979;
+  shape-rendering: crispEdges;
+}
+
+.xLabel, .value, { text-anchor: middle; }
+
+.stamp {
+    text-anchor: end;
+    font-size: 6px;
+}
+
+.y-unit {
+  alignment-baseline: middle;
+}
+
+.y-unit-right {
+  text-anchor: end;
+}
+
+.wide-tick line{
+  stroke-width: 7px;
+}
+
+.numb, .y-axis text, .x-axis text {
+  pointer-events: none;
+}
+
+.brush .extent {
+  stroke: #FFF;
+  shape-rendering: crispEdges;
+  fill: #E6E7E8;
+  opacity: 1.0;
+}
+
+.clickable {
+  cursor: hand;
+}
+
+.d3-tip {
+  line-height: 1;
+  font-weight: bold;
+  padding: 12px;
+  background: rgba(0, 0, 0, 0.8);
+  color: #ffffff;
+  border-radius: 6px;
+}
+.d3-tip p {
+        padding-top: 5px;
+        padding-bottom: 5px;
+}
+
+text { font-size: 12px; font-family: "Helvetica", "Sans Serif", "Tohama"; }
+.ctext { text-align: "middle" }
+.hide { display: none; }
+
+.dbg-vis-border {
+  border: #797979 solid 1px;
+}
+.dbg-svg-green {
+  fill: #00ff00;
+}
+
+.bold {
+  font-weight: bold;
+}
+
+// layout stuff
+.mt1 {
+  margin-top: 25px;
+}
+.pt1 {
+  padding-top: 15px;
+}
+.pr2 {
+  padding-right: 30px;
+}
+
+.ml2 {
+  margin-left: 40px;
+}
+
+.svg-container {
+    display: inline-block;
+    position: relative;
+    width: 100%;
+    padding-bottom: 100%; /* aspect ratio */
+    vertical-align: top;
+    overflow: hidden;
+}
+.svg-content-responsive {
+    display: inline-block;
+    position: absolute;
+    top: 10px;
+    left: 0;
+}
+
+</style></head>
+<body>
+<p id="msg" style="padding-left: 40px;"/>
+<div id="button_container">
+</div>
+<div id="log_div">
+</div>
+<script type="text/javascript">
+    var entries = [
+          {"t": "Mark Tech Exp as not crowded. ", "u": "/api/sim/c/0"}
+        , {"t": "Mark Tech Exp as crowded. ", "u": "/api/sim/c/1"}
+        , {"t": "Mark Trolley as spacious. ", "u": "/api/sim/k/0"}
+        , {"t": "Mark Trolley as crowded. ", "u": "/api/sim/k/1"}
+        , {"t": "Inject next bus (<2min) for Tech Exp. ", "u": "/api/next/c/101"}
+        , {"t": "Mark next bus for Tech Exp unavailable. ", "u": "/api/next/c/-1"}
+        , {"t": "Inject next bus(<2min) for Trolley. ", "u": "/api/next/k/101"}
+        , {"t": "Mark next bus for Trolley unavailable. ", "u": "/api/next/k/-1"}
+    ]
+    var ul = d3.select("#button_container").append("div")
+    ul.selectAll("p").data(entries)
+        .enter()
+        .append("p")
+        .attr("class", "clickable")
+        .style("width", "100%")
+        .style("padding-top", "1.25em")
+        .style("padding-bottom", "1.25em")
+        .style("padding-left", "40px")
+        .style("margin", 0)
+        .style("background-color", function(d, i){ return 0 == i % 2? "#E9F9A0" : "#F0FFC9" })
+        .text(function(d) { return d["t"] })
+        .on("click", function(d) {
+            var xmlHttp = new XMLHttpRequest()
+            xmlHttp.onreadystatechange = function() { 
+                if (xmlHttp.readyState == 4 && xmlHttp.status == 200)
+                    d3.select("#msg").text(xmlHttp.responseText);
+                    setTimeout(function() {
+                        d3.select("#msg").text("")
+                    }, 2500)
+            }
+            xmlHttp.open("GET", d["u"], true); // true for asynchronous 
+            xmlHttp.send(null);
+        })
+    
+</script>
+</body>
+
+</html>

@@ -42,6 +42,9 @@ var dir_clients = nconf.get("google-key").split(",").map(function(d) {
       key: d
     })
 })
+var dir_api_cd = Math.ceil(36 / dir_clients.length)
+console.log("%d api keys will rotate, query countdown %d", 
+    dir_clients.lenth, dir_api_cd)
 var dir_idx = 0;
 function get_dir_cli() {
     var ret = dir_clients[dir_idx]
@@ -77,6 +80,7 @@ router.get('/', function(req, res) {
 router.get('/suggest', function(req, res) {
     res.json(answer)
 })
+// Simulate crowdedness
 router.get('/sim/:id/:value', function(req, res) {
     var id = req.params.id
     if(!(id in answer)) {
@@ -87,11 +91,21 @@ router.get('/sim/:id/:value', function(req, res) {
     answer[id]["c"] = "1" == value || "true" == value
     res.json({"msg": id + " updated", "c": answer[id]["c"]})
 })
+
+router.get("/next/:id/:sec", function(req, res) {
+    var id = req.params.id
+    if(!(id in answer)) {
+        res.json({"msg": "Id not found"})
+        return
+    }
+    answer[id]["n"] = [+req.params.sec]
+    res.json({"msg": id + " next updated", "a": answer})
+})
 var missing = -1 // to save sapce
 var answer = { // c - clough, k - klaus, n - next, a - ahead, c - crowded, w - walk
-      "c": {"n": [missing], "a": missing, "c": 0, "w": 9}
-    , "k": {"n": [missing], "a": missing, "c": 1, "w": 7}
-    , "c2k": {"w": 4 }
+      "c": {"n": [missing], "a": missing, "c": 0, "w": 623}
+    , "k": {"n": [missing], "a": missing, "c": 1, "w": 518}
+    , "c2k": {"w": 181 }
 }
 
 var user_agent = "Mozilla/5.0"
@@ -235,7 +249,7 @@ function ask_google_maps() {
 }
 setTimeout(ask_google_maps, 100)
 setTimeout(ask_google_maps, 2600)
-setInterval(ask_google_maps, 40 * 1000)
+setInterval(ask_google_maps, dir_api_cd * 1000)
 
 // Record google api results
 var tingo = require('tingodb')();
